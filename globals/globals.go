@@ -28,4 +28,5 @@ var Postgres *sql.DB
 var MatchmakingManager *common_globals.MatchmakingManager
 
 var TokenAESKey []byte
+var NEXPasswordSecret []byte
 var LocalAuthMode bool

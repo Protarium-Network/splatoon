@@ -1,30 +1,33 @@
 package globals
 
 import (
-	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/binary"
 	"encoding/json"
 	"os"
 	"strconv"
 
 	"github.com/PretendoNetwork/nex-go/v2/types"
-	common_globals "github.com/PretendoNetwork/nex-protocols-common-go/v2/globals"
 	"github.com/PretendoNetwork/nex-protocols-go/v2/globals"
 
-	pb "github.com/PretendoNetwork/grpc/go/account/v2"
 	"github.com/PretendoNetwork/nex-go/v2"
-	"google.golang.org/grpc/metadata"
 )
 
+// PasswordFromPID derives the NEX password as HMAC-SHA256(secret, pid as 8 bytes LE) so the
+// token service and this server agree on it without storing credentials.
 func PasswordFromPID(pid types.PID) (string, uint32) {
-	ctx := metadata.NewOutgoingContext(context.Background(), common_globals.GRPCAccountCommonMetadata)
-
-	response, err := common_globals.GRPCAccountClient.GetNEXPassword(ctx, &pb.GetNEXPasswordRequest{Pid: uint32(pid)})
-	if err != nil {
-		Logger.Error(err.Error())
+	if len(NEXPasswordSecret) < 32 {
 		return "", nex.ResultCodes.RendezVous.InvalidUsername
 	}
 
-	return response.Password, 0
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, uint64(pid))
+	mac := hmac.New(sha256.New, NEXPasswordSecret)
+	_, _ = mac.Write(b)
+
+	return base64.RawURLEncoding.EncodeToString(mac.Sum(nil)), 0
 }
 
 // This is the same format as nex-viewer's settings.json

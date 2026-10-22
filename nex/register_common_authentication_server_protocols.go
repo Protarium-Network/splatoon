@@ -38,6 +38,8 @@ func registerCommonAuthenticationServerProtocols() {
 			return nil
 		}
 	} else {
-		commonTicketGrantingProtocol.ConfigurePNValidation([]string{"10162B00"})
+		commonTicketGrantingProtocol.ValidateLoginData = func(pid types.PID, loginData types.DataHolder) *nex.Error {
+			return globals.ValidateLocalLoginData(pid, loginData, globals.TokenAESKey)
+		}
 	}
 }

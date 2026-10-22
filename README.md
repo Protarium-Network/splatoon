@@ -1,4 +1,12 @@
 # Splatoon (Wii U) replacement server
+
+> Fork of [PretendoNetwork/splatoon](https://github.com/PretendoNetwork/splatoon) for setups that do not run the Pretendo account server. AGPL-3.0, same as upstream.
+>
+> - Login tokens are opened locally (`PN_NEX_TOKEN_AES_KEY`, Pretendo's AES token format) and NEX passwords are derived from the PID with `PN_NEX_PASSWORD_SECRET`, so no account gRPC service is needed. `globals/local_token.go` is adapted from `nex-protocols-common-go` v2.4.0, which later moved this check to the account server.
+> - The friends gRPC service is still used for friends matchmaking.
+> - Game parameters (retail Splatoon: access key `6f599f81`, game server ID `10162B00`, NEX 3.8.15) match the retail executable.
+> - Tested on Cemu only.
+
 Includes both the authentication and secure servers
 
 ## Compiling
@@ -72,9 +80,8 @@ All configuration options are handled via environment variables
 | `PN_SPLATOON_AUTHENTICATION_SERVER_PORT` | Port for the authentication server                                                              | Yes                                            |
 | `PN_SPLATOON_SECURE_SERVER_HOST`         | Host name for the secure server (should point to the same address as the authentication server) | Yes                                            |
 | `PN_SPLATOON_SECURE_SERVER_PORT`         | Port for the secure server                                                                      | Yes                                            |
-| `PN_SPLATOON_ACCOUNT_GRPC_HOST`          | Host name for your account server gRPC service                                                  | Yes                                            |
-| `PN_SPLATOON_ACCOUNT_GRPC_PORT`          | Port for your account server gRPC service                                                       | Yes                                            |
-| `PN_SPLATOON_ACCOUNT_GRPC_API_KEY`       | API key for your account server gRPC service                                                    | No (Assumed to be an open gRPC API)            |
+| `PN_NEX_TOKEN_AES_KEY`                   | AES-256 key (64 hex chars) used to open the NEX login token                                      | Yes |
+| `PN_NEX_PASSWORD_SECRET`                 | HMAC secret (hex, 32+ bytes) used to derive per-PID NEX passwords                                | Yes |
 | `PN_SPLATOON_FRIENDS_GRPC_HOST`          | Host name for Friends gRPC service (used for friends matchmaking)                               | Yes                                            |
 | `PN_SPLATOON_FRIENDS_GRPC_PORT`          | Port for Friends gRPC service                                                                   | Yes                                            |
 | `PN_SPLATOON_FRIENDS_GRPC_API_KEY`       | API key for Friends gRPC service                                                                | No (Assumed to be an open gRPC API)            |

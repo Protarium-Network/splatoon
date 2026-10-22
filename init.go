@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"strconv"
@@ -10,7 +11,6 @@ import (
 
 	pbfriends "github.com/PretendoNetwork/grpc/go/friends"
 	"github.com/PretendoNetwork/nex-go/v2"
-	common_globals "github.com/PretendoNetwork/nex-protocols-common-go/v2/globals"
 
 	"github.com/PretendoNetwork/plogger-go"
 	"github.com/PretendoNetwork/splatoon/globals"
@@ -33,9 +33,6 @@ func init() {
 	authenticationServerPort := os.Getenv("PN_SPLATOON_AUTHENTICATION_SERVER_PORT")
 	secureServerHost := os.Getenv("PN_SPLATOON_SECURE_SERVER_HOST")
 	secureServerPort := os.Getenv("PN_SPLATOON_SECURE_SERVER_PORT")
-	accountGRPCHost := os.Getenv("PN_SPLATOON_ACCOUNT_GRPC_HOST")
-	accountGRPCPort := os.Getenv("PN_SPLATOON_ACCOUNT_GRPC_PORT")
-	accountGRPCAPIKey := os.Getenv("PN_SPLATOON_ACCOUNT_GRPC_API_KEY")
 	friendsGRPCHost := os.Getenv("PN_SPLATOON_FRIENDS_GRPC_HOST")
 	friendsGRPCPort := os.Getenv("PN_SPLATOON_FRIENDS_GRPC_PORT")
 	friendsGRPCAPIKey := os.Getenv("PN_SPLATOON_FRIENDS_GRPC_API_KEY")
@@ -84,30 +81,19 @@ func init() {
 		os.Exit(0)
 	}
 
-	if strings.TrimSpace(accountGRPCHost) == "" {
-		globals.Logger.Error("PN_SPLATOON_ACCOUNT_GRPC_HOST environment variable not set")
+	// Login tokens are opened locally (AES key) and NEX passwords derived (HMAC secret); both are
+	// shared with the service that issues the tokens, so no account gRPC server is needed.
+	globals.TokenAESKey, err = hex.DecodeString(os.Getenv("PN_NEX_TOKEN_AES_KEY"))
+	if err != nil || len(globals.TokenAESKey) != 32 {
+		globals.Logger.Error("PN_NEX_TOKEN_AES_KEY must be a 64-character hex AES-256 key")
 		os.Exit(0)
 	}
 
-	if strings.TrimSpace(accountGRPCPort) == "" {
-		globals.Logger.Error("PN_SPLATOON_ACCOUNT_GRPC_PORT environment variable not set")
+	globals.NEXPasswordSecret, err = hex.DecodeString(os.Getenv("PN_NEX_PASSWORD_SECRET"))
+	if err != nil || len(globals.NEXPasswordSecret) < 32 {
+		globals.Logger.Error("PN_NEX_PASSWORD_SECRET must be at least 32 bytes encoded as hexadecimal")
 		os.Exit(0)
 	}
-
-	accountPort, err := strconv.Atoi(accountGRPCPort)
-	if err != nil {
-		globals.Logger.Errorf("PN_SPLATOON_ACCOUNT_GRPC_PORT is not a valid port. Expected 0-65535, got %s", accountGRPCPort)
-		os.Exit(0)
-	} else if accountPort < 0 || accountPort > 65535 {
-		globals.Logger.Errorf("PN_SPLATOON_ACCOUNT_GRPC_PORT is not a valid port. Expected 0-65535, got %s", accountGRPCPort)
-		os.Exit(0)
-	}
-
-	if strings.TrimSpace(accountGRPCAPIKey) == "" {
-		globals.Logger.Warning("Insecure gRPC server detected. PN_SPLATOON_ACCOUNT_GRPC_API_KEY environment variable not set")
-	}
-
-	common_globals.ConnectToAccountGRPC(accountGRPCHost, uint16(accountPort), accountGRPCAPIKey)
 
 	if strings.TrimSpace(friendsGRPCHost) == "" {
 		globals.Logger.Error("PN_SPLATOON_FRIENDS_GRPC_HOST environment variable not set")
@@ -120,10 +106,10 @@ func init() {
 	}
 
 	if port, err := strconv.Atoi(friendsGRPCPort); err != nil {
-		globals.Logger.Errorf("PN_SPLATOON_FRIENDS_GRPC_PORT is not a valid port. Expected 0-65535, got %s", accountGRPCPort)
+		globals.Logger.Errorf("PN_SPLATOON_FRIENDS_GRPC_PORT is not a valid port. Expected 0-65535, got %s", friendsGRPCPort)
 		os.Exit(0)
 	} else if port < 0 || port > 65535 {
-		globals.Logger.Errorf("PN_SPLATOON_FRIENDS_GRPC_PORT is not a valid port. Expected 0-65535, got %s", accountGRPCPort)
+		globals.Logger.Errorf("PN_SPLATOON_FRIENDS_GRPC_PORT is not a valid port. Expected 0-65535, got %s", friendsGRPCPort)
 		os.Exit(0)
 	}
 
